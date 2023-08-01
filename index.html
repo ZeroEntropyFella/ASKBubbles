@@ -51,7 +51,7 @@ let timer = svg.append("text")
     .text("");
 
 // Load the data
-d3.csv("d3bubs1.csv").then(data => {
+d3.tsv("d3bubs1.csv").then(data => {
     // Preprocess the data
     let regions = {}, cities = {};
     data.forEach(d => {
@@ -63,7 +63,7 @@ d3.csv("d3bubs1.csv").then(data => {
 
     // Convert regions and cities into arrays of objects
     let regionData = Object.entries(regions).map(([name, value]) => {
-        return {name: name, value: value, radius: Math.sqrt(value) * 10, color: "blue"};
+        return {name: name, value: value, radius: 0.01, color: "none"};  // Make region bubbles invisible and small
     });
     let cityData = Object.entries(cities).map(([name, region]) => {
         return {name: name, value: 1, radius: 5, color: "red"};
@@ -80,16 +80,20 @@ d3.csv("d3bubs1.csv").then(data => {
         .attr("r", d => d.radius)
         .attr("fill", d => d.color)
         .on("mouseover", function (event, d) {
-            d3.select(this).attr("stroke", "#000");
-            tooltip.html("Name: " + d.name + "<br>Value: " + d.value)
-                .style("visibility", "visible");
+            if (d.color !== "none") {  // Only show tooltip for city bubbles
+                d3.select(this).attr("stroke", "#000");
+                tooltip.html("Name: " + d.name + "<br>Value: " + d.value)
+                    .style("visibility", "visible");
+            }
         })
         .on("mousemove", function (event) {
             tooltip.style("top", (event.pageY - 10) + "px").style("left", (event.pageX + 10) + "px");
         })
         .on("mouseout", function () {
-            d3.select(this).attr("stroke", null);
-            tooltip.style("visibility", "hidden");
+            if (d.color !== "none") {  // Only hide tooltip for city bubbles
+                d3.select(this).attr("stroke", null);
+                tooltip.style("visibility", "hidden");
+            }
         });
 
     // Add labels to the region bubbles
@@ -149,11 +153,7 @@ d3.csv("d3bubs1.csv").then(data => {
             .attr("cy", regionData.y)
             .remove();
 
-        // Grow the region bubble
-        regionData.radius += 0.5;
-        regionData.value++;
-
-        // If the requested location and assigned region do not match, flash the region bubble
+        // If the requested location and assigned region do not match, flash the city bubble
         if (cityData.color !== regionData.color) {
             d3.select(`circle[cx="${regionData.x}"][cy="${regionData.y}"]`)
                 .transition()
