@@ -109,7 +109,7 @@ d3.json("data.js").then(function(data) {
             x: cityNodes[cities.indexOf(d["Requested By Location"])].x,
             y: cityNodes[cities.indexOf(d["Requested By Location"])].y,
             radius: 5,
-            simulation: d3.forceSimulation().alphaDecay(0)
+            delay: delay * i
         };
     });
 
@@ -124,27 +124,17 @@ d3.json("data.js").then(function(data) {
         .attr("cx", function(d) { return d.x; })
         .attr("cy", function(d) { return d.y; });
 
-    // Animate the nodes one by one
-    function animateNode(index) {
-        if (index >= eventNodes.length) {
-            return;
-        }
+    // Add the nodes to the simulation
+    simulation.nodes(eventNodes);
 
-        var node = eventNodes[index];
-        node.simulation.nodes([node]);
-        node.simulation.force("x", d3.forceX(foci[node.region].x).strength(0.5));
-        node.simulation.force("y", d3.forceY(foci[node.region].y).strength(0.5));
-        node.simulation.alpha(1).restart();
-
+    // Apply the force to the nodes after a delay
+    eventNodes.forEach(function(node) {
         setTimeout(function() {
-            node.simulation.stop();
-            simulation.nodes(simulation.nodes().concat(node));
+            simulation.force("x", d3.forceX(foci[node.region].x).strength(0.5));
+            simulation.force("y", d3.forceY(foci[node.region].y).strength(0.5));
             simulation.alpha(1).restart();
-            animateNode(index + 1);
-        }, delay);
-    }
-
-    animateNode(0);
+        }, node.delay);
+    });
 });
 
 // Update the positions of the circles on each tick of the simulation
