@@ -131,34 +131,35 @@ d3.json("data.js").then(function(data) {
 
     // Animate the nodes
     function animateNodes(index) {
-        if (index >= eventNodes.length) {
-            return;
-        }
-
-        var node = eventNodes[index];
-
-        // Animate the node's movement from the city to the region
-        d3.select("#event" + node.id)
-            .transition()
-            .duration(delay)
-            .attrTween("cx", function() {
-                var i = d3.interpolate(node.x, foci[node.region].x);
-                return function(t) { return node.x = i(t); };
-            })
-            .attrTween("cy", function() {
-                var i = d3.interpolate(node.y, foci[node.region].y);
-                return function(t) { return node.y = i(t); };
-            })
-            .on("end", function() {
-                // Redefine the force layout to make the node stay in the region cluster
-                simulation.force("x", d3.forceX(function(d) { return foci[d.region].x; }).strength(0.2));
-                simulation.force("y", d3.forceY(function(d) { return foci[d.region].y; }).strength(0.2));
-                simulation.alpha(1).restart();
-                animateNodes(index + 1);
-            });
+    if (index >= eventNodes.length) {
+        return;
     }
 
-    animateNodes(0);
+    var node = eventNodes[index];
+
+    // Compute the distance and angle from the city to the region
+    var dx = foci[node.region].x - node.x;
+    var dy = foci[node.region].y - node.y;
+    var distance = Math.sqrt(dx * dx + dy * dy);
+    var angle = Math.atan2(dy, dx);
+
+    // Compute the velocity needed to move the node to the region in the given duration
+    var velocity = distance / delay;
+
+    // Update the node's velocity
+    node.vx = velocity * Math.cos(angle);
+    node.vy = velocity * Math.sin(angle);
+
+    // Schedule the next animation
+    setTimeout(function() {
+        // Reset the node's velocity
+        node.vx = 0;
+        node.vy = 0;
+
+        // Animate the next node
+        animateNodes(index + 1);
+    }, delay);
+}
 });
 
 // Update the positions of the circles on each tick of the simulation
