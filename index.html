@@ -13,8 +13,8 @@
 <script>
 // Set the dimensions and margins of the graph
 var margin = {top: 10, right: 30, bottom: 30, left: 40},
-    width = 3200 - margin.left - margin.right,
-    height = 2400 - margin.top - margin.bottom;
+    width = 1600 - margin.left - margin.right,
+    height = 1200 - margin.top - margin.bottom;
 
 // Append the SVG object to the body of the page
 var svg = d3.select("body")
@@ -42,18 +42,18 @@ var colors = {
 // Load the data
 d3.json("data.js").then(function(data) {
     // Create a node for each city
-    var nodes = data.map(function(d, i) {
-        var angle = (i / data.length) * 2 * Math.PI;
-        var edgeX = width / 2 + (width / 2 - 50) * Math.cos(angle);
-        var edgeY = height / 2 + (height / 2 - 50) * Math.sin(angle);
-        return {
-            id: i,
-            city: d["Requested By Location"],
-            region: d["Assigned to Region"],
-            x: edgeX,
-            y: edgeY
-        };
-    });
+    var nodes = Array.from(new Set(data.map(function(d) { return d["Requested By Location"]; })))
+        .map(function(city, i) {
+            var angle = (i / data.length) * 2 * Math.PI;
+            var edgeX = width / 2 + (width / 2 - 50) * Math.cos(angle);
+            var edgeY = height / 2 + (height / 2 - 50) * Math.sin(angle);
+            return {
+                id: i,
+                city: city,
+                x: edgeX,
+                y: edgeY
+            };
+        });
 
     // Create SVG circles for each city
     var cityCircles = svg.selectAll(".city")
@@ -61,7 +61,7 @@ d3.json("data.js").then(function(data) {
         .enter()
         .append("circle")
         .classed("city", true)
-        .attr("r", 2.5) // Radius of the bubbles
+        .attr("r", 5) // Radius of the bubbles
         .attr("cx", function(d) { return d.x; })
         .attr("cy", function(d) { return d.y; })
         .attr("fill", "black");
@@ -72,7 +72,7 @@ d3.json("data.js").then(function(data) {
         .enter()
         .append("text")
         .classed("city-label", true)
-        .style("font-size", "8px") // Decrease font size
+        .style("font-size", "16px") // Increase font size
         .attr("dx", function(d) { return d.x; })
         .attr("dy", function(d) { return d.y - 10; }) // Offset the labels above the bubbles
         .text(function(d) { return d.city; });
@@ -96,17 +96,19 @@ d3.json("data.js").then(function(data) {
     // Animation for each request
     var i = 0;
     var interval = setInterval(function() {
-        if (i >= nodes.length) {
+        if (i >= data.length) {
             clearInterval(interval);
             return;
         }
-        var node = nodes[i];
+        var record = data[i];
+        var node = nodes.find(function(d) { return d.city === record["Requested By Location"]; });
         var request = svg.append("circle")
             .classed("request", true)
             .attr("r", 3)
             .attr("cx", node.x)
             .attr("cy", node.y)
-            .attr("fill", colors[node.region]);
+            .attr("fill", colors[record["Assigned to Region"]]);
+        node.region = record["Assigned to Region"];
         simulation.nodes([node]);
         simulation.alpha(1).restart();
         simulation.on("tick", function() {
@@ -119,17 +121,19 @@ d3.json("data.js").then(function(data) {
 function setDelay(delay) {
     clearInterval(interval);
     interval = setInterval(function() {
-        if (i >= nodes.length) {
+        if (i >= data.length) {
             clearInterval(interval);
             return;
         }
-        var node = nodes[i];
+        var record = data[i];
+        var node = nodes.find(function(d) { return d.city === record["Requested By Location"]; });
         var request = svg.append("circle")
             .classed("request", true)
             .attr("r", 3)
             .attr("cx", node.x)
             .attr("cy", node.y)
-            .attr("fill", colors[node.region]);
+            .attr("fill", colors[record["Assigned to Region"]]);
+        node.region = record["Assigned to Region"];
         simulation.nodes([node]);
         simulation.alpha(1).restart();
         simulation.on("tick", function() {
