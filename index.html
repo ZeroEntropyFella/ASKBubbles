@@ -120,6 +120,7 @@ d3.json("data.js").then(function(data) {
         .enter()
         .append("circle")
         .attr("class", "event")
+        .attr("id", function(d) { return "event" + d.id; }) // Add an id to each circle
         .attr("r", 5) // Radius of the bubbles
         .attr("fill", function(d) { return colors[d.region]; })
         .attr("cx", function(d) { return d.x; })
@@ -134,11 +135,27 @@ d3.json("data.js").then(function(data) {
             return;
         }
 
-        simulation.alpha(1).restart();
+        var node = eventNodes[index];
 
-        d3.transition()
+        // Animate the node's movement from the city to the region
+        d3.select("#event" + node.id)
+            .transition()
             .duration(delay)
-            .on("end", function() { animateNodes(index + 1); });
+            .attrTween("cx", function() {
+                var i = d3.interpolate(node.x, foci[node.region].x);
+                return function(t) { return node.x = i(t); };
+            })
+            .attrTween("cy", function() {
+                var i = d3.interpolate(node.y, foci[node.region].y);
+                return function(t) { return node.y = i(t); };
+            })
+            .on("end", function() {
+                // Redefine the force layout to make the node stay in the region cluster
+                simulation.force("x", d3.forceX(function(d) { return foci[d.region].x; }).strength(0.2));
+                simulation.force("y", d3.forceY(function(d) { return foci[d.region].y; }).strength(0.2));
+                simulation.alpha(1).restart();
+                animateNodes(index + 1);
+            });
     }
 
     animateNodes(0);
