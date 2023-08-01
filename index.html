@@ -41,7 +41,7 @@ var colors = {
 
 // Create a force simulation
 var simulation = d3.forceSimulation()
-    .force("collide", d3.forceCollide(function(d) { return d.radius + 1; }))
+    .force("collide", d3.forceCollide(function(d) { return d.radius + 2; }))
     .on("tick", ticked);
 
 // Create a global delay variable for the animation speed
@@ -60,8 +60,8 @@ d3.json("data.js").then(function(data) {
         var angle = (i / cities.length) * 2 * Math.PI;
         return {
             city: city,
-            x: (width / 2) * (1 + 0.9 * Math.cos(angle)),
-            y: (height / 2) * (1 + 0.9 * Math.sin(angle))
+            x: (width / 2) + 0.4 * width * Math.cos(angle),
+            y: (height / 2) + 0.4 * height * Math.sin(angle)
         };
     });
 
@@ -109,15 +109,20 @@ d3.json("data.js").then(function(data) {
             x: cityNodes[cities.indexOf(d["Requested By Location"])].x,
             y: cityNodes[cities.indexOf(d["Requested By Location"])].y,
             radius: 5,
-            color: colors[d["Assigned to Region"]],
-            simulation: d3.forceSimulation()
-                .alphaDecay(0)
-                .force("x", d3.forceX().strength(0.2))
-                .force("y", d3.forceY().strength(0.2))
-                .force("collide", d3.forceCollide(function(d) { return d.radius + 1; }))
-                .on("tick", ticked)
+            simulation: d3.forceSimulation().alphaDecay(0)
         };
     });
+
+    // Create SVG circles for each event
+    var circles = svg.selectAll(".event")
+        .data(eventNodes)
+        .enter()
+        .append("circle")
+        .attr("class", "event")
+        .attr("r", 5) // Radius of the bubbles
+        .attr("fill", function(d) { return colors[d.region]; })
+        .attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
 
     // Animate the nodes one by one
     function animateNode(index) {
@@ -127,13 +132,13 @@ d3.json("data.js").then(function(data) {
 
         var node = eventNodes[index];
         node.simulation.nodes([node]);
-        node.simulation.force("x").x(foci[node.region].x);
-        node.simulation.force("y").y(foci[node.region].y);
+        node.simulation.force("x", d3.forceX(foci[node.region].x).strength(0.5));
+        node.simulation.force("y", d3.forceY(foci[node.region].y).strength(0.5));
         node.simulation.alpha(1).restart();
 
         setTimeout(function() {
             node.simulation.stop();
-            simulation.nodes().push(node);
+            simulation.nodes(simulation.nodes().concat(node));
             simulation.alpha(1).restart();
             animateNode(index + 1);
         }, delay);
@@ -145,26 +150,10 @@ d3.json("data.js").then(function(data) {
 // Update the positions of the circles on each tick of the simulation
 function ticked() {
     svg.selectAll(".event")
-        .data(simulation.nodes(), function(d) { return d.id; })
-        .join(
-            function(enter) {
-                return enter.append("circle")
-                    .attr("class", "event")
-                    .attr("r", function(d) { return d.radius; })
-                    .attr("fill", function(d) { return d.color; })
-                    .attr("cx", function(d) { return d.x; })
-                    .attr("cy", function(d) { return d.y; });
-            },
-            function(update) {
-                return update
-                    .attr("cx", function(d) { return d.x; })
-                    .attr("cy", function(d) { return d.y; });
-            },
-            function(exit) {
-                return exit.remove();
-            }
-        );
+        .attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
 }
+
 </script>
 </body>
 </html>
