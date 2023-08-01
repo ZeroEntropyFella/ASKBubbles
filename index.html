@@ -41,9 +41,7 @@ var colors = {
 
 // Create a force simulation
 var simulation = d3.forceSimulation()
-    .force("x", d3.forceX().strength(0.2))
-    .force("y", d3.forceY().strength(0.2))
-    .force("collide", d3.forceCollide().radius(function(d) { return d.radius + 1; }))
+    .force("collide", d3.forceCollide(function(d) { return d.radius + 2; }))
     .on("tick", ticked);
 
 // Create a global delay variable for the animation speed
@@ -97,7 +95,7 @@ d3.json("data.js").then(function(data) {
         .append("text")
         .attr("class", "region-label")
         .attr("x", function(d) { return foci[d].x; })
-        .attr("cy", function(d) { return foci[d].y; })
+        .attr("y", function(d) { return foci[d].y; })
         .text(function(d) { return d; })
         .attr("text-anchor", "middle")
         .attr("dominant-baseline", "middle");
@@ -111,7 +109,7 @@ d3.json("data.js").then(function(data) {
             x: cityNodes[cities.indexOf(d["Requested By Location"])].x,
             y: cityNodes[cities.indexOf(d["Requested By Location"])].y,
             radius: 5,
-            delay: delay * i
+            simulation: d3.forceSimulation().alphaDecay(0)
         };
     });
 
@@ -126,22 +124,27 @@ d3.json("data.js").then(function(data) {
         .attr("cx", function(d) { return d.x; })
         .attr("cy", function(d) { return d.y; });
 
-    // Animate each node individually
-    eventNodes.forEach(function(node) {
+    // Animate the nodes one by one
+    function animateNode(index) {
+        if (index >= eventNodes.length) {
+            return;
+        }
+
+        var node = eventNodes[index];
+        node.simulation.nodes([node]);
+        node.simulation.force("x", d3.forceX(foci[node.region].x).strength(0.5));
+        node.simulation.force("y", d3.forceY(foci[node.region].y).strength(0.5));
+        node.simulation.alpha(1).restart();
+
         setTimeout(function() {
-            // Transition the position of the node to its region
-            d3.select(circles.nodes()[node.id])
-                .transition()
-                .duration(delay)
-                .attr("cx", foci[node.region].x)
-                .attr("cy", foci[node.region].y)
-                .on("end", function() {
-                    // After the transition is complete, add the node to the force simulation
-                    simulation.nodes().push(node);
-                    simulation.alpha(1).restart();
-                });
-        }, node.delay);
-    });
+            node.simulation.stop();
+            simulation.nodes(simulation.nodes().concat(node));
+            simulation.alpha(1).restart();
+            animateNode(index + 1);
+        }, delay);
+    }
+
+    animateNode(0);
 });
 
 // Update the positions of the circles on each tick of the simulation
