@@ -41,8 +41,6 @@ var colors = {
 
 // Create a force simulation
 var simulation = d3.forceSimulation()
-    .force("x", d3.forceX(function(d) { return foci[d.region].x; }).strength(0.2))
-    .force("y", d3.forceY(function(d) { return foci[d.region].y; }).strength(0.2))
     .force("collide", d3.forceCollide(function(d) { return d.radius + 1; }))
     .on("tick", ticked);
 
@@ -110,65 +108,63 @@ d3.json("data.js").then(function(data) {
             region: d["Assigned to Region"],
             x: cityNodes[cities.indexOf(d["Requested By Location"])].x,
             y: cityNodes[cities.indexOf(d["Requested By Location"])].y,
-            radius: 5
+            radius: 5,
+            color: colors[d["Assigned to Region"]],
+            simulation: d3.forceSimulation()
+                .alphaDecay(0)
+                .force("x", d3.forceX().strength(0.2))
+                .force("y", d3.forceY().strength(0.2))
+                .force("collide", d3.forceCollide(function(d) { return d.radius + 1; }))
+                .on("tick", ticked)
         };
     });
 
-    // Create SVG circles for each event
-    var circles = svg.selectAll(".event")
-        .data(eventNodes)
-        .enter()
-        .append("circle")
-        .attr("class", "event")
-        .attr("id", function(d) { return "event" + d.id; }) // Add an id to each circle
-        .attr("r", 5) // Radius of the bubbles
-        .attr("fill", function(d) { return colors[d.region]; })
-        .attr("cx", function(d) { return d.x; })
-        .attr("cy", function(d) { return d.y; });
+    // Animate the nodes one by one
+    function animateNode(index) {
+        if (index >= eventNodes.length) {
+            return;
+        }
 
-    // Add the nodes to the simulation
-    simulation.nodes(eventNodes);
+        var node = eventNodes[index];
+        node.simulation.nodes([node]);
+        node.simulation.force("x").x(foci[node.region].x);
+        node.simulation.force("y").y(foci[node.region].y);
+        node.simulation.alpha(1).restart();
 
-    // Animate the nodes
-    function animateNodes(index) {
-    if (index >= eventNodes.length) {
-        return;
+        setTimeout(function() {
+            node.simulation.stop();
+            simulation.nodes().push(node);
+            simulation.alpha(1).restart();
+            animateNode(index + 1);
+        }, delay);
     }
 
-    var node = eventNodes[index];
-
-    // Compute the distance and angle from the city to the region
-    var dx = foci[node.region].x - node.x;
-    var dy = foci[node.region].y - node.y;
-    var distance = Math.sqrt(dx * dx + dy * dy);
-    var angle = Math.atan2(dy, dx);
-
-    // Compute the velocity needed to move the node to the region in the given duration
-    var velocity = distance / delay;
-
-    // Update the node's velocity
-    node.vx = velocity * Math.cos(angle);
-    node.vy = velocity * Math.sin(angle);
-
-    // Schedule the next animation
-    setTimeout(function() {
-        // Reset the node's velocity
-        node.vx = 0;
-        node.vy = 0;
-
-        // Animate the next node
-        animateNodes(index + 1);
-    }, delay);
-}
+    animateNode(0);
 });
 
 // Update the positions of the circles on each tick of the simulation
 function ticked() {
     svg.selectAll(".event")
-        .attr("cx", function(d) { return d.x; })
-        .attr("cy", function(d) { return d.y; });
+        .data(simulation.nodes(), function(d) { return d.id; })
+        .join(
+            function(enter) {
+                return enter.append("circle")
+                    .attr("class", "event")
+                    .attr("r", function(d) { return d.radius; })
+                    .attr("fill", function(d) { return d.color; })
+                    .attr("cx", function(d) { return d.x; })
+                    .attr("cy", function(d) { return d.y; });
+            },
+            function(update) {
+                return update
+                    .attr("cx", function(d) { return d.x; })
+                    .attr("cy", function(d) { return d.y; });
+            },
+            function(exit) {
+                return exit.remove();
+            }
+        );
 }
-
 </script>
 </body>
 </html>
