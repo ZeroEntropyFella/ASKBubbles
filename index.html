@@ -1,178 +1,62 @@
-<!DOCTYPE html>
-<meta charset="utf-8">
-
-<!-- Import D3.js -->
-<script src="https://d3js.org/d3.v6.min.js"></script>
-<script src="https://d3js.org/d3-timer.v1.min.js"></script>
-
-<body>
-<!-- Add speed control buttons -->
-<button onclick="setDelay(1000)">Slow</button>
-<button onclick="setDelay(500)">Medium</button>
-<button onclick="setDelay(100)">Fast</button>
-
-<script>
 // Set the dimensions and margins of the graph
-const margin = {top: 10, right: 30, bottom: 30, left: 40},
-      width = 800 - margin.left - margin.right,
-      height = 600 - margin.top - margin.bottom;
+var margin = {top: 10, right: 30, bottom: 30, left: 40},
+    width = 800 - margin.left - margin.right,
+    height = 600 - margin.top - margin.bottom;
 
 // Append the SVG object to the body of the page
-const svg = d3.select("body")
+var svg = d3.select("body")
   .append("svg")
   .attr("width", width + margin.left + margin.right)
-  .attr("height", height + margin.top - margin.bottom)
+  .attr("height", height + margin.top + margin.bottom)
   .append("g")
-  .attr("transform", `translate(${margin.left}, ${margin.top})`);
+  .attr("transform",
+        "translate(" + margin.left + "," + margin.top + ")");
 
-// Initialize force simulation parameters
-const forceX = d3.forceX(width / 2).strength(0.05);
-const forceY = d3.forceY(height / 2).strength(0.05);
-const forceCollide = d3.forceCollide(d => d.radius);
+// Locations of the regions
+var foci = {
+    "APAC": {x: 100, y: 200},
+    "EMEA": {x: 350, y: 200},
+    "AMER": {x: 600, y: 200}
+};
 
-// Initialize the force simulation
-const simulation = d3.forceSimulation()
-    .force('x', forceX)
-    .force('y', forceY)
-    .force('collide', forceCollide);
-
-// Create a global delay variable for the animation speed
-let delay = 1000;
-
-// Create a function to set the delay
-function setDelay(newDelay) {
-    delay = newDelay;
-}
-
-// Create a timer text element
-let timer = svg.append("text")
-    .attr("x", 10)
-    .attr("y", 10)
-    .text("");
+// Colors of the regions
+var colors = {
+    "APAC": "lightgrey",
+    "EMEA": "red",
+    "AMER": "darkgrey"
+};
 
 // Load the data
-d3.json("data.js").then(data => {
-    // Preprocess the data
-    let regions = {}, cities = {};
-    data.forEach(d => {
-        let region = d["Assigned to Region"], city = d["Requested By Location"];
-        if (region in regions) regions[region]++;
-        else regions[region] = 1;
-        if (!(city in cities)) cities[city] = region;
+d3.json("data.js").then(function(data) {
+    // Create a node for each city
+    var nodes = data.map(function(d, i) {
+        return {
+            id: i,
+            city: d["Requested By Location"],
+            region: d["Assigned to Region"],
+            x: Math.random() * width,
+            y: Math.random() * height
+        };
     });
 
-    // Convert regions and cities into arrays of objects
-    let regionData = Object.entries(regions).map(([name, value]) => {
-        return {name: name, value: value, radius: Math.sqrt(value) * 10, color: "blue"};
-    });
-    let cityData = Object.entries(cities).map(([name, region]) => {
-        return {name: name, value: 1, radius: 5, color: "red"};
-    });
+    // Create a force simulation
+    var simulation = d3.forceSimulation(nodes)
+        .force("x", d3.forceX(function(d) { return foci[d.region].x; }).strength(0.2))
+        .force("y", d3.forceY(function(d) { return foci[d.region].y; }).strength(0.2))
+        .force("collide", d3.forceCollide(10));
 
-    // Combine region and city data
-    let bubbleData = [...regionData, ...cityData];
-
-    // Bind the data to the SVG elements
-    let bubbles = svg.selectAll("circle")
-        .data(bubbleData)
+    // Create SVG circles for each city
+    var circles = svg.selectAll("circle")
+        .data(nodes)
         .enter()
         .append("circle")
-        .attr("r", d => d.radius)
-        .attr("fill", d => d.color)
-        .on("mouseover", function (event, d) {
-            d3.select(this).attr("stroke", "#000");
-            tooltip.html("Name: " + d.name + "<br>Value: " + d.value)
-                .style("visibility", "visible");
-        })
-        .on("mousemove", function (event) {
-            tooltip.style("top", (event.pageY - 10) + "px").style("left", (event.pageX + 10) + "px");
-        })
-        .on("mouseout", function () {
-            d3.select(this).attr("stroke", null);
-            tooltip.style("visibility", "hidden");
-        });
+        .attr("r", 5) // Radius of the bubbles
+        .attr("fill", function(d) { return colors[d.region]; });
 
-    // Add labels to the region bubbles
-    svg.selectAll("text")
-        .data(regionData)
-        .enter()
-        .append("text")
-        .attr("dy", ".3em")
-        .style("text-anchor", "middle")
-        .text(d => d.name);
-
-    // Define the tooltip
-    let tooltip = d3.select("body")
-        .append("div")
-        .style("position", "absolute")
-        .style("z-index", "10")
-        .style("visibility", "hidden")
-        .style("background", "#ffffff")
-        .style("border", "solid")
-        .style("border-width", "2px")
-        .style("border-radius", "5px")
-        .style("padding", "10px");
-
-    // Define the tick function for the simulation
-    function tick() {
-        bubbles.attr("cx", d => d.x).attr("cy", d => d.y);
-    }
-
-    // Start the simulation
-    simulation.nodes(bubbleData).on("tick", tick);
-
-    // Function to animate an event
-    function animateEvent(event, delay) {
-        let city = event["Requested By Location"];
-        let region = event["Assigned to Region"];
-
-        // Find the data for the city and region
-        let cityData = bubbleData.find(d => d.name === city);
-        let regionData = bubbleData.find(d => d.name === region);
-
-        // If the city or region is not found, do nothing
-        if (!cityData || !regionData) return;
-
-        // Create a new bubble for the event
-        let eventBubble = svg.append("circle")
-            .datum({x: cityData.x, y: cityData.y, radius: cityData.radius, color: cityData.color})
-            .attr("cx", d => d.x)
-            .attr("cy", d => d.y)
-            .attr("r", d => d.radius)
-            .attr("fill", d => d.color);
-
-        // Animate the bubble moving to the region
-        eventBubble.transition()
-            .delay(delay)
-            .duration(1000)
-            .attr("cx", regionData.x)
-            .attr("cy", regionData.y)
-            .remove();
-
-        // Grow the region bubble
-        regionData.radius += 0.5;
-        regionData.value++;
-
-        // If the requested location and assigned region do not match, flash the region bubble
-        if (cityData.color !== regionData.color) {
-            d3.select(bubbles.nodes()[regionData.index])
-                .transition()
-                .duration(100)
-                .attr("fill", "yellow")
-                .transition()
-                .duration(100)
-                .attr("fill", regionData.color);
-        }
-    }
-
-    // Animate all the events
-    data.forEach((event, i) => {
-        animateEvent(event, i * delay);
+    // Update the positions of the circles on each tick of the simulation
+    simulation.on("tick", function() {
+        circles
+            .attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; });
     });
-
-    // Update the force simulation
-    simulation.nodes(bubbleData).on("tick", tick);
 });
-</script>
-</body>
-</html>
