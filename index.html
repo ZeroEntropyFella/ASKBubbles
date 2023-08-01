@@ -43,7 +43,8 @@ var colors = {
 var simulation = d3.forceSimulation()
     .force("x", d3.forceX(function(d) { return foci[d.region].x; }).strength(0.2))
     .force("y", d3.forceY(function(d) { return foci[d.region].y; }).strength(0.2))
-    .force("collide", d3.forceCollide(10));
+    .force("collide", d3.forceCollide(10))
+    .alpha(1);
 
 // Create a global delay variable for the animation speed
 var delay = 1000;
@@ -126,27 +127,23 @@ d3.json("data.js").then(function(data) {
         .attr("cx", function(d) { return d.x; })
         .attr("cy", function(d) { return d.y; });
 
-    // Update the positions of the circles on each tick of the simulation
-    simulation.on("tick", function() {
-        circles
-            .attr("cx", function(d) { return d.x; })
-            .attr("cy", function(d) { return d.y; });
-    });
-
     // Animate the nodes
     function animateNodes(index) {
         if (index >= eventNodes.length) {
             return;
         }
-        // Start the transition only after the simulation has "warmed up"
-        setTimeout(function() {
-            circles.transition()
-                .duration(delay)
+
+        simulation.alpha(1).restart();
+
+        d3.transition()
+            .duration(delay)
+            .on("end", function() { animateNodes(index + 1); });
+
+        simulation.on("tick", function() {
+            circles
                 .attr("cx", function(d) { return d.x; })
-                .attr("cy", function(d) { return d.y; })
-                .on("end", function() { animateNodes(index + 1); });
-            simulation.alpha(1).restart();
-        }, index * delay);
+                .attr("cy", function(d) { return d.y; });
+        });
     }
     animateNodes(0);
 });
