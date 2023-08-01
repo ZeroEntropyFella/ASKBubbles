@@ -109,12 +109,10 @@ d3.json("data.js").then(function(data) {
             city: d["Requested By Location"],
             region: d["Assigned to Region"],
             x: cityNodes[cities.indexOf(d["Requested By Location"])].x,
-            y: cityNodes[cities.indexOf(d["Requested By Location"])].y
+            y: cityNodes[cities.indexOf(d["Requested By Location"])].y,
+            radius: 5
         };
     });
-
-    // Add the nodes to the simulation
-    simulation.nodes(eventNodes);
 
     // Create SVG circles for each event
     var circles = svg.selectAll(".event")
@@ -127,6 +125,9 @@ d3.json("data.js").then(function(data) {
         .attr("cx", function(d) { return d.x; })
         .attr("cy", function(d) { return d.y; });
 
+    // Add the nodes to the simulation
+    simulation.nodes(eventNodes);
+
     // Animate the nodes
     function animateNodes(index) {
         if (index >= eventNodes.length) {
@@ -138,29 +139,18 @@ d3.json("data.js").then(function(data) {
         d3.transition()
             .duration(delay)
             .on("end", function() { animateNodes(index + 1); });
-
-    function ticked() {
-    // Update the positions of the nodes
-    nodes.attr("cx", function(d) { return d.x; })
-         .attr("cy", function(d) { return d.y; });
-
-    // For each request, create a new node and add it to the simulation
-    for (var i = 0; i < data.length; i++) {
-        var request = data[i];
-        var node = {
-            id: nodes.length,
-            city: request["Requested By Location"],
-            region: request["Assigned to Region"],
-            x: cityCoords[request["Requested By Location"]].x,
-            y: cityCoords[request["Requested By Location"]].y,
-            radius: 5
-        };
-        nodes.push(node);
-        simulation.nodes(nodes);
     }
-}
+
     animateNodes(0);
 });
+
+// Update the positions of the circles on each tick of the simulation
+function ticked() {
+    svg.selectAll(".event")
+        .attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
+}
+
 </script>
 </body>
 </html>
