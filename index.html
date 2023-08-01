@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <meta charset="utf-8">
 
@@ -8,13 +9,13 @@
 <!-- Add speed control buttons -->
 <button onclick="setDelay(1000)">Slow</button>
 <button onclick="setDelay(500)">Medium</button>
-<button onclick="setDelay(100)">Fast</button>
+<button onclick="setDelay(20)">Fast</button>
 
 <script>
 // Set the dimensions and margins of the graph
 var margin = {top: 10, right: 30, bottom: 30, left: 40},
-    width = 1600 - margin.left - margin.right,
-    height = 1200 - margin.top - margin.bottom;
+    width = 800 - margin.left - margin.right,
+    height = 600 - margin.top - margin.bottom;
 
 // Append the SVG object to the body of the page
 var svg = d3.select("body")
@@ -27,9 +28,9 @@ var svg = d3.select("body")
 
 // Locations of the regions
 var foci = {
-    "APAC": {x: width/2, y: height/4},
+    "APAC": {x: width/3, y: height/2},
     "EMEA": {x: width/2, y: height/2},
-    "AMER": {x: width/2, y: 3*height/4}
+    "AMER": {x: 2*width/3, y: height/2}
 };
 
 // Colors of the regions
@@ -84,7 +85,7 @@ d3.json("data.js").then(function(data) {
         .append("text")
         .classed("region-label", true)
         .attr("dx", function(d) { return foci[d].x; })
-        .attr("dy", function(d) { return foci[d].y; }) // Offset the labels above the bubbles
+        .attr("dy", function(d) { return foci[d].y - 20; }) // Offset the labels above the bubbles
         .text(function(d) { return d; });
 
     // Create a force simulation
