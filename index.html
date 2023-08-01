@@ -8,7 +8,7 @@
 <!-- Add speed control buttons -->
 <button onclick="setDelay(1000)">Slow</button>
 <button onclick="setDelay(500)">Medium</button>
-<button onclick="setDelay(20)">Fast</button>
+<button onclick="setDelay(100)">Fast</button>
 
 <script>
 // Set the dimensions and margins of the graph
@@ -86,6 +86,18 @@ d3.json("data.js").then(function(data) {
         .attr("x", function(d) { return d.x; })
         .attr("y", function(d) { return d.y; })
         .text(function(d) { return d.city; })
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle");
+
+    // Create SVG labels for each region
+    svg.selectAll(".region-label")
+        .data(Object.keys(foci))
+        .enter()
+        .append("text")
+        .attr("class", "region-label")
+        .attr("x", function(d) { return foci[d].x; })
+        .attr("y", function(d) { return foci[d].y; })
+        .text(function(d) { return d; })
         .attr("text-anchor", "middle")
         .attr("dominant-baseline", "middle");
 
