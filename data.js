@@ -199,7 +199,7 @@
         "Requested Time": "7/28/2023 22:15",
         "Assigned To Location": "Mexico GBS",
         "Requested By Location": "Mexico City",
-        "Assigned to Region": NaN,
+        "Assigned to Region": "AMER",
         "Requested by Region": "AMER"
     },
     {
@@ -514,7 +514,7 @@
         "Requested Time": "7/28/2023 18:53",
         "Assigned To Location": "Mexico GBS",
         "Requested By Location": "San Francisco",
-        "Assigned to Region": NaN,
+        "Assigned to Region": "AMER",
         "Requested by Region": "AMER"
     },
     {
@@ -822,15 +822,15 @@
         "Requested Time": "7/28/2023 16:00",
         "Assigned To Location": "Mexico GBS",
         "Requested By Location": "London",
-        "Assigned to Region": NaN,
+        "Assigned to Region": "AMER",
         "Requested by Region": "EMEA"
     },
     {
         "Requested Time": "7/28/2023 16:00",
         "Assigned To Location": "Mexico GBS",
         "Requested By Location": "Mexico GBS",
-        "Assigned to Region": NaN,
-        "Requested by Region": NaN
+        "Assigned to Region": "AMER",
+        "Requested by Region": "AMER"
     },
     {
         "Requested Time": "7/28/2023 16:00",
@@ -1194,7 +1194,7 @@
         "Assigned To Location": "Jakarta",
         "Requested By Location": "Bangkok (Local)",
         "Assigned to Region": "APAC",
-        "Requested by Region": NaN
+        "Requested by Region": "APAC"
     },
     {
         "Requested Time": "7/28/2023 13:07",
@@ -1208,7 +1208,7 @@
         "Assigned To Location": "Jakarta",
         "Requested By Location": "Bangkok (Local)",
         "Assigned to Region": "APAC",
-        "Requested by Region": NaN
+        "Requested by Region": "APAC"
     },
     {
         "Requested Time": "7/28/2023 12:56",
@@ -1530,7 +1530,7 @@
         "Assigned To Location": "Warsaw GBS",
         "Requested By Location": "Dubai (DWTC)",
         "Assigned to Region": "EMEA",
-        "Requested by Region": NaN
+        "Requested by Region": "EMEA"
     },
     {
         "Requested Time": "7/28/2023 10:25",
@@ -1572,7 +1572,7 @@
         "Assigned To Location": "London",
         "Requested By Location": "South Africa - Rand",
         "Assigned to Region": "EMEA",
-        "Requested by Region": NaN
+        "Requested by Region": "EMEA"
     },
     {
         "Requested Time": "7/28/2023 10:00",
@@ -1782,7 +1782,7 @@
         "Assigned To Location": "Shanghai",
         "Requested By Location": "Dubai (DWTC)",
         "Assigned to Region": "APAC",
-        "Requested by Region": NaN
+        "Requested by Region": "EMEA"
     },
     {
         "Requested Time": "7/28/2023 3:34",
