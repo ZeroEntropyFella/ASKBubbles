@@ -138,12 +138,15 @@ d3.json("data.js").then(function(data) {
         if (index >= eventNodes.length) {
             return;
         }
-        circles.transition()
-            .duration(delay)
-            .attr("cx", function(d) { return d.x; })
-            .attr("cy", function(d) { return d.y; })
-            .on("end", function() { animateNodes(index + 1); });
-        simulation.alpha(1).restart();
+        // Start the transition only after the simulation has "warmed up"
+        setTimeout(function() {
+            circles.transition()
+                .duration(delay)
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+                .on("end", function() { animateNodes(index + 1); });
+            simulation.alpha(1).restart();
+        }, index * delay);
     }
     animateNodes(0);
 });
