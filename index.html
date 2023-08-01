@@ -127,11 +127,11 @@ d3.json("data.js").then(function(data) {
     // Add the nodes to the simulation
     simulation.nodes(eventNodes);
 
-    // Apply the force to the nodes after a delay
+    // Animate each node individually
     eventNodes.forEach(function(node) {
         setTimeout(function() {
-            simulation.force("x", d3.forceX(foci[node.region].x).strength(0.5));
-            simulation.force("y", d3.forceY(foci[node.region].y).strength(0.5));
+            node.fx = foci[node.region].x;
+            node.fy = foci[node.region].y;
             simulation.alpha(1).restart();
         }, node.delay);
     });
