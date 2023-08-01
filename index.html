@@ -13,8 +13,8 @@
 <script>
 // Set the dimensions and margins of the graph
 var margin = {top: 10, right: 30, bottom: 30, left: 40},
-    width = 800 - margin.left - margin.right,
-    height = 600 - margin.top - margin.bottom;
+    width = 1200 - margin.left - margin.right,
+    height = 800 - margin.top - margin.bottom;
 
 // Append the SVG object to the body of the page
 var svg = d3.select("body")
@@ -27,9 +27,9 @@ var svg = d3.select("body")
 
 // Locations of the regions
 var foci = {
-    "APAC": {x: 100, y: 200},
-    "EMEA": {x: 350, y: 200},
-    "AMER": {x: 600, y: 200}
+    "APAC": {x: width / 4, y: height / 2},
+    "EMEA": {x: width / 2, y: height / 2},
+    "AMER": {x: 3 * width / 4, y: height / 2}
 };
 
 // Colors of the regions
@@ -38,6 +38,13 @@ var colors = {
     "EMEA": "red",
     "AMER": "darkgrey"
 };
+
+// Create a force simulation
+var simulation = d3.forceSimulation()
+    .force("x", d3.forceX(function(d) { return foci[d.region].x; }).strength(0.2))
+    .force("y", d3.forceY(function(d) { return foci[d.region].y; }).strength(0.2))
+    .force("collide", d3.forceCollide(function(d) { return d.radius + 1; }))
+    .on("tick", ticked);
 
 // Create a global delay variable for the animation speed
 var delay = 1000;
@@ -50,54 +57,109 @@ function setDelay(newDelay) {
 // Load the data
 d3.json("data.js").then(function(data) {
     // Create a node for each city
-    var cityNodes = data.map(function(d, i) {
+    var cities = Array.from(new Set(data.map(function(d) { return d["Requested By Location"]; })));
+    var cityNodes = cities.map(function(city, i) {
+        var angle = (i / cities.length) * 2 * Math.PI;
         return {
-            id: i,
-            city: d["Requested By Location"],
-            region: d["Assigned to Region"],
-            x: Math.cos(i / data.length * 2 * Math.PI) * width / 2 + width / 2,
-            y: Math.sin(i / data.length * 2 * Math.PI) * height / 2 + height / 2
-        };
-    });
-
-    // Create a node for each event
-    var eventNodes = data.map(function(d, i) {
-        return {
-            id: i + data.length,
-            city: d["Requested By Location"],
-            region: d["Assigned to Region"],
-            x: Math.cos(i / data.length * 2 * Math.PI) * width / 2 + width / 2,
-            y: Math.sin(i / data.length * 2 * Math.PI) * height / 2 + height / 2
+            city: city,
+            x: (width / 2) * (1 + 0.9 * Math.cos(angle)),
+            y: (height / 2) * (1 + 0.9 * Math.sin(angle))
         };
     });
 
     // Create SVG circles for each city
-    var cityCircles = svg.selectAll(".city")
+    svg.selectAll(".city")
         .data(cityNodes)
-        .join("circle")
+        .enter()
+        .append("circle")
         .attr("class", "city")
-        .attr("r", 5) // Radius of the bubbles
+        .attr("r", 10) // Radius of the bubbles
+        .attr("fill", "black")
         .attr("cx", function(d) { return d.x; })
-        .attr("cy", function(d) { return d.y; })
-        .attr("fill", "black");
+        .attr("cy", function(d) { return d.y; });
+
+    // Create SVG labels for each city
+    svg.selectAll(".city-label")
+        .data(cityNodes)
+        .enter()
+        .append("text")
+        .attr("class", "city-label")
+        .attr("x", function(d) { return d.x; })
+        .attr("y", function(d) { return d.y; })
+        .text(function(d) { return d.city; })
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle");
+
+    // Create SVG labels for each region
+    svg.selectAll(".region-label")
+        .data(Object.keys(foci))
+        .enter()
+        .append("text")
+        .attr("class", "region-label")
+        .attr("x", function(d) { return foci[d].x; })
+        .attr("y", function(d) { return foci[d].y; })
+        .text(function(d) { return d; })
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle");
+
+    // Create a node for each event
+    var eventNodes = data.map(function(d, i) {
+        return {
+            id: i,
+            city: d["Requested By Location"],
+            region: d["Assigned to Region"],
+            x: cityNodes[cities.indexOf(d["Requested By Location"])].x,
+            y: cityNodes[cities.indexOf(d["Requested By Location"])].y
+        };
+    });
+
+    // Add the nodes to the simulation
+    simulation.nodes(eventNodes);
 
     // Create SVG circles for each event
-    var eventCircles = svg.selectAll(".event")
+    var circles = svg.selectAll(".event")
         .data(eventNodes)
-        .join("circle")
+        .enter()
+        .append("circle")
         .attr("class", "event")
         .attr("r", 5) // Radius of the bubbles
+        .attr("fill", function(d) { return colors[d.region]; })
         .attr("cx", function(d) { return d.x; })
-        .attr("cy", function(d) { return d.y; })
-        .attr("fill", function(d) { return colors[d.region]; });
+        .attr("cy", function(d) { return d.y; });
 
-    // Animate the events
-    eventCircles
-        .transition()
-        .delay(function(d, i) { return i * delay; })
-        .duration(1000)
-        .attr("cx", function(d) { return foci[d.region].x; })
-        .attr("cy", function(d) { return foci[d.region].y; });
+    // Animate the nodes
+    function animateNodes(index) {
+        if (index >= eventNodes.length) {
+            return;
+        }
+
+        simulation.alpha(1).restart();
+
+        d3.transition()
+            .duration(delay)
+            .on("end", function() { animateNodes(index + 1); });
+
+    function ticked() {
+    // Update the positions of the nodes
+    nodes.attr("cx", function(d) { return d.x; })
+         .attr("cy", function(d) { return d.y; });
+
+    // For each request, create a new node and add it to the simulation
+    for (var i = 0; i < data.length; i++) {
+        var request = data[i];
+        var node = {
+            id: nodes.length,
+            city: request["Requested By Location"],
+            region: request["Assigned to Region"],
+            x: cityCoords[request["Requested By Location"]].x,
+            y: cityCoords[request["Requested By Location"]].y,
+            radius: 5
+        };
+        nodes.push(node);
+        simulation.nodes(nodes);
+    }
+}
+    animateNodes(0);
 });
 </script>
 </body>
