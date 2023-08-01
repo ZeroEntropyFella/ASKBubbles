@@ -155,7 +155,7 @@ d3.json("data.js").then(data => {
 
         // If the requested location and assigned region do not match, flash the region bubble
         if (cityData.color !== regionData.color) {
-            d3.select(`circle[cx="${regionData.x}"][cy="${regionData.y}"]`)
+            d3.select(bubbles.nodes()[regionData.index])
                 .transition()
                 .duration(100)
                 .attr("fill", "yellow")
