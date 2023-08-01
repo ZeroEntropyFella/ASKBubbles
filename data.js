@@ -1,4 +1,4 @@
-let data = [
+[
     {
         "Requested Time": "7/28/2023 23:59",
         "Assigned To Location": "Dallas",
