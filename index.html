@@ -13,8 +13,8 @@
 <script>
 // Set the dimensions and margins of the graph
 var margin = {top: 10, right: 30, bottom: 30, left: 40},
-    width = 800 - margin.left - margin.right,
-    height = 600 - margin.top - margin.bottom;
+    width = 1200 - margin.left - margin.right,
+    height = 800 - margin.top - margin.bottom;
 
 // Append the SVG object to the body of the page
 var svg = d3.select("body")
@@ -27,9 +27,9 @@ var svg = d3.select("body")
 
 // Locations of the regions
 var foci = {
-    "APAC": {x: width/3, y: height/2},
-    "EMEA": {x: width/2, y: height/2},
-    "AMER": {x: 2*width/3, y: height/2}
+    "APAC": {x: width / 4, y: height / 2},
+    "EMEA": {x: width / 2, y: height / 2},
+    "AMER": {x: 3 * width / 4, y: height / 2}
 };
 
 // Colors of the regions
@@ -39,109 +39,102 @@ var colors = {
     "AMER": "darkgrey"
 };
 
+// Create a force simulation
+var simulation = d3.forceSimulation()
+    .force("x", d3.forceX(function(d) { return foci[d.region].x; }).strength(0.2))
+    .force("y", d3.forceY(function(d) { return foci[d.region].y; }).strength(0.2))
+    .force("collide", d3.forceCollide(10));
+
+// Create a global delay variable for the animation speed
+var delay = 1000;
+
+// Create a function to set the delay
+function setDelay(newDelay) {
+    delay = newDelay;
+}
+
 // Load the data
 d3.json("data.js").then(function(data) {
     // Create a node for each city
-    var nodes = Array.from(new Set(data.map(function(d) { return d["Requested By Location"]; })))
-        .map(function(city, i) {
-            var angle = (i / data.length) * 2 * Math.PI;
-            var edgeX = width / 2 + (width / 2 - 50) * Math.cos(angle);
-            var edgeY = height / 2 + (height / 2 - 50) * Math.sin(angle);
-            return {
-                id: i,
-                city: city,
-                x: edgeX,
-                y: edgeY
-            };
-        });
+    var cities = Array.from(new Set(data.map(function(d) { return d["Requested By Location"]; })));
+    var cityNodes = cities.map(function(city, i) {
+        var angle = (i / cities.length) * 2 * Math.PI;
+        return {
+            city: city,
+            x: (width / 2) * (1 + 0.9 * Math.cos(angle)),
+            y: (height / 2) * (1 + 0.9 * Math.sin(angle))
+        };
+    });
 
     // Create SVG circles for each city
-    var cityCircles = svg.selectAll(".city")
-        .data(nodes)
+    svg.selectAll(".city")
+        .data(cityNodes)
         .enter()
         .append("circle")
-        .classed("city", true)
-        .attr("r", 5) // Radius of the bubbles
+        .attr("class", "city")
+        .attr("r", 10) // Radius of the bubbles
+        .attr("fill", "black")
         .attr("cx", function(d) { return d.x; })
-        .attr("cy", function(d) { return d.y; })
-        .attr("fill", "black");
+        .attr("cy", function(d) { return d.y; });
 
-    // Create SVG text for each city
-    var cityLabels = svg.selectAll(".city-label")
-        .data(nodes)
+    // Create SVG labels for each city
+    svg.selectAll(".city-label")
+        .data(cityNodes)
         .enter()
         .append("text")
-        .classed("city-label", true)
-        .style("font-size", "16px") // Increase font size
-        .attr("dx", function(d) { return d.x; })
-        .attr("dy", function(d) { return d.y - 10; }) // Offset the labels above the bubbles
-        .text(function(d) { return d.city; });
+        .attr("class", "city-label")
+        .attr("x", function(d) { return d.x; })
+        .attr("y", function(d) { return d.y; })
+        .text(function(d) { return d.city; })
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle");
 
-    // Create SVG text for each region
-    var regionLabels = svg.selectAll(".region-label")
-        .data(Object.keys(foci))
+    // Create a node for each event
+    var eventNodes = data.map(function(d, i) {
+        return {
+            id: i,
+            city: d["Requested By Location"],
+            region: d["Assigned to Region"],
+            x: cityNodes[cities.indexOf(d["Requested By Location"])].x,
+            y: cityNodes[cities.indexOf(d["Requested By Location"])].y
+        };
+    });
+
+    // Add the nodes to the simulation
+    simulation.nodes(eventNodes);
+
+    // Create SVG circles for each event
+    var circles = svg.selectAll(".event")
+        .data(eventNodes)
         .enter()
-        .append("text")
-        .classed("region-label", true)
-        .attr("dx", function(d) { return foci[d].x; })
-        .attr("dy", function(d) { return foci[d].y - 20; }) // Offset the labels above the bubbles
-        .text(function(d) { return d; });
+        .append("circle")
+        .attr("class", "event")
+        .attr("r", 5) // Radius of the bubbles
+        .attr("fill", function(d) { return colors[d.region]; })
+        .attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
 
-    // Create a force simulation
-    var simulation = d3.forceSimulation()
-        .force("x", d3.forceX(function(d) { return foci[d.region].x; }).strength(0.05))
-        .force("y", d3.forceY(function(d) { return foci[d.region].y; }).strength(0.05))
-        .force("collide", d3.forceCollide(10));
+    // Update the positions of the circles on each tick of the simulation
+    simulation.on("tick", function() {
+        circles
+            .attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; });
+    });
 
-    // Animation for each request
-    var i = 0;
-    var interval = setInterval(function() {
-        if (i >= data.length) {
-            clearInterval(interval);
+    // Animate the nodes
+    function animateNodes(index) {
+        if (index >= eventNodes.length) {
             return;
         }
-        var record = data[i];
-        var node = nodes.find(function(d) { return d.city === record["Requested By Location"]; });
-        var request = svg.append("circle")
-            .classed("request", true)
-            .attr("r", 3)
-            .attr("cx", node.x)
-            .attr("cy", node.y)
-            .attr("fill", colors[record["Assigned to Region"]]);
-        node.region = record["Assigned to Region"];
-        simulation.nodes([node]);
+        circles.transition()
+            .duration(delay)
+            .attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; })
+            .on("end", function() { animateNodes(index + 1); });
         simulation.alpha(1).restart();
-        simulation.on("tick", function() {
-            request.attr("cx", node.x).attr("cy", node.y);
-        });
-        i++;
-    }, 1000);
+    }
+    animateNodes(0);
 });
-
-function setDelay(delay) {
-    clearInterval(interval);
-    interval = setInterval(function() {
-        if (i >= data.length) {
-            clearInterval(interval);
-            return;
-        }
-        var record = data[i];
-        var node = nodes.find(function(d) { return d.city === record["Requested By Location"]; });
-        var request = svg.append("circle")
-            .classed("request", true)
-            .attr("r", 3)
-            .attr("cx", node.x)
-            .attr("cy", node.y)
-            .attr("fill", colors[record["Assigned to Region"]]);
-        node.region = record["Assigned to Region"];
-        simulation.nodes([node]);
-        simulation.alpha(1).restart();
-        simulation.on("tick", function() {
-            request.attr("cx", node.x).attr("cy", node.y);
-        });
-        i++;
-    }, delay);
-}
 </script>
 </body>
 </html>
